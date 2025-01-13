@@ -13,17 +13,14 @@ exports.register = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Verifică dacă utilizatorul există deja
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
     }
 
-    // Creează utilizator nou
     const user = new User({ username, password });
     await user.save();
 
-    // Generează token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
@@ -38,24 +35,25 @@ exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Găsește utilizatorul
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Verifică parola
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Generează token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
 
-    res.json({ token });
+    res.json({
+      success: true,
+      token,
+      redirectUrl: process.env.FRONTEND_URL,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -114,21 +112,9 @@ exports.googleCallback = async (req, res) => {
       expiresIn: "24h",
     });
 
-    // Pentru dezvoltare, returnăm direct JSON
-    res.json({
-      success: true,
-      token: jwtToken,
-      user: {
-        id: user._id,
-        email: user.googleEmail,
-      },
-    });
+    res.redirect(`${process.env.FRONTEND_URL}?token=${jwtToken}`);
   } catch (error) {
     console.error("Google callback error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Authentication failed",
-      error: error.message,
-    });
+    res.redirect(`${process.env.FRONTEND_URL}?error=authentication_failed`);
   }
 };

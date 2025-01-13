@@ -6,12 +6,15 @@ const path = require("path");
 
 const app = express();
 
-// Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000", // URL-ul frontend-ului
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging middleware
 app.use((req, res, next) => {
   console.log("Incoming Request:", {
     method: req.method,
@@ -21,20 +24,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/contacts", require("./routes/contactRoutes"));
 app.use("/api/sync", require("./routes/syncRoutes"));
 
-// Servim fișierele statice
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Rută pentru pagina principală
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Global Error:", err);
   res.status(500).json({
